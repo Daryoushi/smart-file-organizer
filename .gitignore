@@ -1,0 +1,7 @@
+# Test directories
+test_folder/
+test_env/
+
+# OS generated files
+Thumbs.db
+.DS_Store
