@@ -72,6 +72,37 @@ get_category() {
     esac
 }
 
+# Function to resolve duplicate file names by appending a counter (_1, _2, ...)
+resolve_destination_path() {
+    local target_dir="$1"
+    local original_name="$2"
+
+    local target_path="$target_dir/$original_name"
+    if [ ! -e "$target_path" ]; then
+        echo "$target_path"
+        return 0
+    fi
+
+    local base_name
+    local ext_suffix=""
+
+    if [[ "$original_name" == *.* ]]; then
+        base_name="${original_name%.*}"
+        ext_suffix=".${original_name##*.}"
+    else
+        base_name="$original_name"
+    fi
+
+    local counter=1
+    local new_path="$target_dir/${base_name}_${counter}${ext_suffix}"
+    while [ -e "$new_path" ]; do
+        counter=$((counter + 1))
+        new_path="$target_dir/${base_name}_${counter}${ext_suffix}"
+    done
+
+    echo "$new_path"
+}
+
 echo -e "${YELLOW}Scanning and categorizing files...${NC}"
 
 # Iterate over regular files in TARGET_DIR (non-recursive)
@@ -108,6 +139,13 @@ for file_path in "$TARGET_DIR"/*; do
         mkdir -p "$dest_dir"
     fi
 
-    dest_file="$dest_dir/$filename"
-    mv "$file_path" "$dest_file"
+    # Handle duplicate filenames safely
+    final_dest_path=$(resolve_destination_path "$dest_dir" "$filename")
+    final_dest_name=$(basename "$final_dest_path")
+
+    if [ "$filename" != "$final_dest_name" ]; then
+        echo -e "${YELLOW}[DUPLICATE] '$filename' already exists in $category/. Renaming to '$final_dest_name'${NC}"
+    fi
+
+    mv "$file_path" "$final_dest_path"
 done
