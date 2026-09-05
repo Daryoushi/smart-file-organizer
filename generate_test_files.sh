@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 set -euo pipefail
 
 TEST_DIR="${1:-test_folder}"
