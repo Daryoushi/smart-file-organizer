@@ -166,16 +166,4 @@ Scanning and categorizing files...
 4. `Add operation logging and colored final summary report`: ثبت لاگ رویدادها در `log.txt` و چاپ گزارش نهایی رنگی.
 5. `Add test files generator and comprehensive README documentation`: اسکریپت تست و مستندسازی کامل پروژه.
 
----
-
-## 📤 راهنمای ارسال پروژه به گیت‌هاب (Public Repository)
-
-1. در حساب [GitHub](https://github.com) خود یک مخزن جدید با دسترسی **Public (عمومی)** بسازید (نام پیشنهادی: `smart-file-organizer`).
-2. اتصال به ریپازیتوری و ارسال کدها:
-
-```bash
-git remote add origin https://github.com/<YOUR_USERNAME>/<REPO_NAME>.git
-git branch -M main
-git push -u origin main
-```
 
