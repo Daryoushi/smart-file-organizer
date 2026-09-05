@@ -50,6 +50,30 @@ DIR_VIDEOS="Videos"
 DIR_ARCHIVES="Archives"
 DIR_OTHERS="Others"
 
+# --- Setup Logging ---
+LOG_FILE="$TARGET_DIR/log.txt"
+
+log_action() {
+    local message="$1"
+    local timestamp
+    timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+    echo "[$timestamp] $message" >> "$LOG_FILE"
+}
+
+# Initialize session log
+log_action "================== SESSION START =================="
+log_action "Target Directory: $TARGET_DIR"
+
+# --- Counters for Statistics ---
+COUNT_IMAGES=0
+COUNT_PDF=0
+COUNT_DOCS_OTHER=0
+COUNT_VIDEOS=0
+COUNT_ZIP=0
+COUNT_ARCHIVES_OTHER=0
+COUNT_OTHERS=0
+TOTAL_MOVED=0
+
 # Function to get category for a given file extension
 get_category() {
     local ext="$1"
@@ -137,6 +161,7 @@ for file_path in "$TARGET_DIR"/*; do
     # Automatically create category directory if it does not exist
     if [ ! -d "$dest_dir" ]; then
         mkdir -p "$dest_dir"
+        log_action "[DIR CREATED] Created directory '$category'"
     fi
 
     # Handle duplicate filenames safely
@@ -144,8 +169,62 @@ for file_path in "$TARGET_DIR"/*; do
     final_dest_name=$(basename "$final_dest_path")
 
     if [ "$filename" != "$final_dest_name" ]; then
-        echo -e "${YELLOW}[DUPLICATE] '$filename' already exists in $category/. Renaming to '$final_dest_name'${NC}"
+        echo -e "  ${YELLOW}↳ [DUPLICATE] '$filename' -> renamed to '$final_dest_name'${NC}"
+        log_action "[DUPLICATE RESOLVED] '$filename' renamed to '$final_dest_name' in '$category/'"
     fi
 
+    # Move file to final destination
     mv "$file_path" "$final_dest_path"
+    log_action "[MOVED] '$filename' -> '$category/$final_dest_name'"
+    echo -e "  ${GREEN}✔ [MOVED]${NC} $filename ${BLUE}➔${NC} $category/$final_dest_name"
+
+    # Increment category-specific counters
+    case "$category" in
+        "$DIR_IMAGES")
+            COUNT_IMAGES=$((COUNT_IMAGES + 1))
+            ;;
+        "$DIR_DOCS")
+            if [ "$ext" = "pdf" ]; then
+                COUNT_PDF=$((COUNT_PDF + 1))
+            else
+                COUNT_DOCS_OTHER=$((COUNT_DOCS_OTHER + 1))
+            fi
+            ;;
+        "$DIR_VIDEOS")
+            COUNT_VIDEOS=$((COUNT_VIDEOS + 1))
+            ;;
+        "$DIR_ARCHIVES")
+            if [ "$ext" = "zip" ]; then
+                COUNT_ZIP=$((COUNT_ZIP + 1))
+            else
+                COUNT_ARCHIVES_OTHER=$((COUNT_ARCHIVES_OTHER + 1))
+            fi
+            ;;
+        *)
+            COUNT_OTHERS=$((COUNT_OTHERS + 1))
+            ;;
+    esac
+
+    TOTAL_MOVED=$((TOTAL_MOVED + 1))
 done
+
+log_action "Total files moved: $TOTAL_MOVED (Images: $COUNT_IMAGES, PDF: $COUNT_PDF, ZIP: $COUNT_ZIP, Videos: $COUNT_VIDEOS, Other Docs: $COUNT_DOCS_OTHER, Other Archives: $COUNT_ARCHIVES_OTHER, Unknown: $COUNT_OTHERS)"
+log_action "================== SESSION END ===================="
+
+# --- Final Summary Report ---
+echo ""
+echo -e "${BLUE}===================================================${NC}"
+echo -e "${BLUE}             Final Organization Report             ${NC}"
+echo -e "${BLUE}===================================================${NC}"
+echo -e "  • Images (عکس)                 : $COUNT_IMAGES"
+echo -e "  • PDF Documents (پی‌دی‌اف)      : $COUNT_PDF"
+echo -e "  • ZIP Archives (فایل زیپ)      : $COUNT_ZIP"
+echo -e "  • Other Archives (سایر فشرده)  : $COUNT_ARCHIVES_OTHER"
+echo -e "  • Videos (ویدیوها)             : $COUNT_VIDEOS"
+echo -e "  • Other Documents (سایر اسناد) : $COUNT_DOCS_OTHER"
+echo -e "  • Others & Unknown (ناشناخته)  : $COUNT_OTHERS"
+echo -e "${BLUE}---------------------------------------------------${NC}"
+echo -e "  • Total Files Moved (مجموع)    : ${GREEN}$TOTAL_MOVED${NC}"
+echo -e "${BLUE}===================================================${NC}"
+echo -e "${GREEN}[INFO] Full activity log saved to: $LOG_FILE${NC}"
+echo ""
