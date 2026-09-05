@@ -42,3 +42,72 @@ if [ ! -r "$TARGET_DIR" ] || [ ! -w "$TARGET_DIR" ]; then
 fi
 
 echo -e "${GREEN}[OK] Target directory found: $TARGET_DIR${NC}"
+
+# --- Setup Category Directory Names ---
+DIR_IMAGES="Images"
+DIR_DOCS="Documents"
+DIR_VIDEOS="Videos"
+DIR_ARCHIVES="Archives"
+DIR_OTHERS="Others"
+
+# Function to get category for a given file extension
+get_category() {
+    local ext="$1"
+    case "$ext" in
+        jpg|jpeg|png|gif|bmp|webp|svg|tiff|ico)
+            echo "$DIR_IMAGES"
+            ;;
+        pdf|doc|docx|txt|xls|xlsx|ppt|pptx|odt|csv|md)
+            echo "$DIR_DOCS"
+            ;;
+        mp4|mkv|avi|mov|wmv|flv|webm|m4v)
+            echo "$DIR_VIDEOS"
+            ;;
+        zip|rar|tar|gz|7z|bz2|xz)
+            echo "$DIR_ARCHIVES"
+            ;;
+        *)
+            echo "$DIR_OTHERS"
+            ;;
+    esac
+}
+
+echo -e "${YELLOW}Scanning and categorizing files...${NC}"
+
+# Iterate over regular files in TARGET_DIR (non-recursive)
+for file_path in "$TARGET_DIR"/*; do
+    # Check if any matching file exists (handles empty directory safely)
+    [ -e "$file_path" ] || continue
+
+    # Skip subdirectories (do not touch already created category folders)
+    [ -f "$file_path" ] || continue
+
+    filename=$(basename "$file_path")
+
+    # Exclude shell scripts and log files from being moved
+    case "$filename" in
+        *.sh|*.log|log.txt)
+            continue
+            ;;
+    esac
+
+    # Extract file extension
+    if [[ "$filename" == *.* ]]; then
+        ext="${filename##*.}"
+        ext=$(echo "$ext" | tr '[:upper:]' '[:lower:]')
+    else
+        ext=""
+    fi
+
+    # Determine target category folder
+    category=$(get_category "$ext")
+    dest_dir="$TARGET_DIR/$category"
+
+    # Automatically create category directory if it does not exist
+    if [ ! -d "$dest_dir" ]; then
+        mkdir -p "$dest_dir"
+    fi
+
+    dest_file="$dest_dir/$filename"
+    mv "$file_path" "$dest_file"
+done
